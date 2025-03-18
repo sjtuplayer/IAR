@@ -1,5 +1,5 @@
 # Improving Autoregressive Visual Generation with Cluster-Oriented Token Prediction
-###  [Paper](https://arxiv.org/abs/2404.15789) |   [Page](https://sjtuplayer.github.io/projects/MotionMaster/)
+###  [Paper](https://arxiv.org/abs/2501.00880) |   [Page](https://sjtuplayer.github.io/projects/IAR/)
 
 <!-- <br> -->
 [Teng Hu](https://github.com/sjtuplayer), 
