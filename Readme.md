@@ -1,17 +1,96 @@
 # Improving Autoregressive Visual Generation with Cluster-Oriented Token Prediction
-###  [Paper](https://arxiv.org/abs/2501.00880) |   [Page](https://sjtuplayer.github.io/projects/IAR/)
 
-<!-- <br> -->
-[Teng Hu](https://github.com/sjtuplayer), 
-[Jiangning Zhang](https://zhangzjn.github.io/),
-[Ran Yi](https://yiranran.github.io/),
-[Jieyu Weng](https://github.com/sjtuplayer/MotionMaster),
-[Yabiao Wang](https://scholar.google.com/citations?hl=zh-CN&user=xiK4nFUAAAAJ),
-[Xianfang Zeng](https://github.com/sjtuplayer/MotionMaster),
-[Zhucun Xue](https://github.com/sjtuplayer/MotionMaster),
-and [Lizhuang Ma](https://dmcv.sjtu.edu.cn/) 
-<!-- <br> -->
+### [Paper](https://arxiv.org/abs/2501.00880) | [Page](https://sjtuplayer.github.io/projects/IAR/)
 
-![image](__assets__/images/framework.png)
+[Teng Hu](https://github.com/sjtuplayer), [Jiangning Zhang](https://zhangzjn.github.io/), [Ran Yi](https://yiranran.github.io/), [Jieyu Weng](https://github.com/sjtuplayer/MotionMaster), [Yabiao Wang](https://scholar.google.com/citations?hl=zh-CN&user=xiK4nFUAAAAJ), [Xianfang Zeng](https://github.com/sjtuplayer/MotionMaster), [Zhucun Xue](https://github.com/sjtuplayer/MotionMaster), and [Lizhuang Ma](https://dmcv.sjtu.edu.cn/)
 
-### Code is coming soon.
+[![image](https://github.com/sjtuplayer/IAR/raw/main/__assets__/images/framework.png)](https://github.com/sjtuplayer/IAR/blob/main/__assets__/images/framework.png)
+
+## Overview
+
+This repository contains the implementation for IAR pipeline, including training, sampling, and evaluation components.
+
+## Prerequisites
+
+Before getting started, ensure you have:
+
+- Python ≥ 3.7
+- PyTorch ≥ 2.1
+- Access to ImageNet or similar dataset for training
+
+## Setup
+
+Download pretrained weights of VQGAN from LlamaGen: https://huggingface.co/FoundationVision/LlamaGen/resolve/main/vq_ds16_c2i.pt
+
+## Training Pipeline
+
+### 1. Data Preparation
+
+First extract codes from your training images:
+
+```
+torchrun \
+--nnodes=1 --nproc_per_node=8 --node_rank=0 \
+--master_port=12345 \
+autoregressive/train/extract_codes_c2i.py \
+--vq-ckpt ./pretrained_models/vq_ds16_c2i.pt \
+--data-path /path/to/imagenet/train \
+--code-path /path/to/output/codes \
+--ten-crop \
+--crop-range 1.1 \
+--image-size 384
+```
+
+### 2. Model Training
+
+Train the autoregressive model:
+
+```
+PYTHONPATH=$PYTHONPATH:./ torchrun \
+--nnodes=1 --nproc_per_node=8 --node_rank=0 \
+--master_port=12345 \
+autoregressive/train/train_c2i.py \
+--results-dir ./results \
+--code-path /path/to/output/codes \
+--image-size 384 \
+--gpt-model GPT-B
+```
+
+## Sampling
+
+### 1. Preprocess VQ Checkpoint
+
+```
+python compute_mapping.py
+```
+
+### 2. Generate Images
+
+Generate new images using a trained model:
+
+```
+PYTHONPATH=$PYTHONPATH:./ torchrun \
+--nnodes=1 --nproc_per_node=8 --node_rank=0 \
+--master_port=12345 \
+autoregressive/sample/sample_c2i_ddp.py \
+--vq-ckpt ./pretrained_models/vq_ds16_c2i-reorder-kmeans+nearest-cluster_size=128.pt \
+--gpt-ckpt results/your_model_directory/checkpoints \
+--gpt-model GPT-B5 \
+--image-size 384 \
+--image-size-eval 256 \
+--cfg-scale 2.25 \
+--num-fid-samples=50000 \
+--sample-dir=samples
+```
+
+## Evaluation
+
+Before evaluation, install required packages as specified in `evaluations/README.md`.
+
+Evaluate generated samples:
+
+```
+python3 evaluations/c2i/evaluator.py \
+evaluations/VIRTUAL_imagenet256_labeled.npz \
+samples/your_generated_samples.npz
+```
