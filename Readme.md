@@ -24,7 +24,7 @@ Download pretrained weights of VQGAN from LlamaGen: https://huggingface.co/Found
 
 ## Training Pipeline
 
-### 1. Data Preparation
+### 0. Data Preparation
 
 First extract codes from your training images:
 
@@ -39,6 +39,15 @@ autoregressive/train/extract_codes_c2i.py \
 --ten-crop \
 --crop-range 1.1 \
 --image-size 384
+```
+
+### 1. Preprocess VQ Checkpoint
+Reorder the codebook with balanced k-means algorithm.
+It will output the reordered codebook for inference and a mapping
+function for training.
+
+```
+python balance_k_means.py
 ```
 
 ### 2. Model Training
@@ -58,13 +67,9 @@ autoregressive/train/train_c2i.py \
 
 ## Sampling
 
-### 1. Preprocess VQ Checkpoint
 
-```
-python compute_mapping.py
-```
 
-### 2. Generate Images
+### Generate Images
 
 Generate new images using a trained model:
 
@@ -75,7 +80,7 @@ PYTHONPATH=$PYTHONPATH:./ torchrun \
 autoregressive/sample/sample_c2i_ddp.py \
 --vq-ckpt ./pretrained_models/vq_ds16_c2i-reorder-kmeans+nearest-cluster_size=128.pt \
 --gpt-ckpt results/your_model_directory/checkpoints \
---gpt-model GPT-B5 \
+--gpt-model GPT-B \
 --image-size 384 \
 --image-size-eval 256 \
 --cfg-scale 2.25 \
@@ -93,4 +98,18 @@ Evaluate generated samples:
 python3 evaluations/c2i/evaluator.py \
 evaluations/VIRTUAL_imagenet256_labeled.npz \
 samples/your_generated_samples.npz
+```
+
+## Citation
+
+If you find this code helpful for your research, please cite:
+
+
+```
+@inproceedings{hu2025improving,
+     title={Improving Autoregressive Visual Generation with Cluster-Oriented Token Prediction},
+     author={Hu, Teng and Zhang, Jiangning and Yi, Ran and Weng, Jieyu and Wang, Yabiao and Zeng, Xianfang and Xue, Zhucun and Ma, Lizhuang},
+     booktitle={Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition},
+     year={2025}
+}
 ```
